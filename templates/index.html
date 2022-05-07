@@ -1,0 +1,108 @@
+<!--
+   index.html
+   
+   Copyright 2022 Kevin Roese
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+	<title>RESTful MD5</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+</head>
+
+<body>
+	<form>
+	<label for="hash">MD5 Hash:</label><br>
+	<input type="text" id="hash" name="hash"><br>
+	<input type="button" id="submit" name="submit" value="Crack"><br>
+   <label for="output">Output:</label><br>
+   <textarea id="output" name="output" readonly rows="10" cols="50" style="overflow:hidden;resize:none;"></textarea>
+	</form>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+<script>
+   submit = document.getElementById("submit");
+   hash = document.getElementById("hash");
+   output = document.getElementById("output");
+
+   var intervalID;
+
+   function addLog(text)
+   {
+      output.value += text + '\n';
+      output.scrollTop = output.scrollHeight;
+   }
+
+   socket = io();
+   socket.on('connect', function(){
+      console.log('Connecting!');
+      addLog('Connecting!');
+      socket.emit('connecting', {data: 'Connected!'});
+   });
+
+   socket.on('info', function(msg){
+      console.log('Received info: ' + msg.message);
+      addLog(msg.message);
+   });
+
+   socket.on('time', function(msg){
+      console.log('Received time: ' + msg.time);
+      addLog('Running for ' + msg.time + ' seconds!');
+   });
+
+   socket.on('error', function(msg){
+      console.log('Received error: ' + msg.message);
+      addLog(msg.message);
+   });
+
+   socket.on('result', function(msg){
+      console.log('Received result: ' + msg.time);
+      if(intervalID == null)
+      {
+         console.log('No interval defined!');
+      }
+      else
+      {
+         clearInterval(intervalID);
+         console.log('Finished!');
+         addLog('Finished at ' + msg.time + ' seconds!');
+         socket.emit('finished', {'time': msg.time});
+      }
+   });
+
+   function queryStatus()
+   {
+      socket.emit('status');
+   }
+
+   submit.onclick = function()
+   {
+      socket.emit('hash', {'hash': hash.value});
+      intervalID = setInterval(queryStatus, 3000);
+      console.log(intervalID);
+   };
+
+</script>
+
+</html>
