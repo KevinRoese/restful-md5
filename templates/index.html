@@ -74,10 +74,18 @@
    socket.on('error', function(msg){
       console.log('Received error: ' + msg.message);
       addLog(msg.message);
+      if(intervalID != null)
+      {
+         console.log('Clearing interval!')
+         clearInterval(intervalID);
+         intervalID = null;
+         submit.disabled = false;
+      }
    });
 
    socket.on('result', function(msg){
-      console.log('Received result: ' + msg.time);
+      console.log('Received result: ' + msg.time + ' ' + msg.sum);
+      submit.disabled = false;
       if(intervalID == null)
       {
          console.log('No interval defined!');
@@ -85,10 +93,11 @@
       else
       {
          clearInterval(intervalID);
-         console.log('Finished!');
-         addLog('Finished at ' + msg.time + ' seconds!');
-         socket.emit('finished', {'time': msg.time});
+         intervalID = null;
       }
+      console.log('Finished!');
+      addLog('Finished at ' + msg.time + ' seconds with sum ' + msg.sum + '!');
+      socket.emit('finished', {'time': msg.time});
    });
 
    function queryStatus()
@@ -98,9 +107,18 @@
 
    submit.onclick = function()
    {
-      socket.emit('hash', {'hash': hash.value});
-      intervalID = setInterval(queryStatus, 3000);
-      console.log(intervalID);
+      if(intervalID == null)
+      {
+         socket.emit('hash', {'hash': hash.value});
+         intervalID = setInterval(queryStatus, 3000);
+         console.log(intervalID);
+         submit.disabled = true;
+      }
+      else
+      {
+         console.log('Interval already running!');
+         addLog('Interval already running!');
+      }
    };
 
 </script>
