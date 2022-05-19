@@ -1,26 +1,3 @@
-<!--
-   index.html
-   
-   Copyright 2022 Kevin Roese
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   MA 02110-1301, USA.
-   
-   
--->
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -33,7 +10,7 @@
 <body>
 	<form>
 	<label for="hash">MD5 Hash:</label><br>
-	<input type="text" id="hash" name="hash"><br>
+	<input type="text" id="hash" name="hash" value="098f6bcd4621d373cade4e832627b4f6"><br><!--as an example, the hash of "test"-->
 	<input type="button" id="submit" name="submit" value="Crack"><br>
    <label for="output">Output:</label><br>
    <textarea id="output" name="output" readonly rows="10" cols="50" style="overflow:hidden;resize:none;"></textarea>
@@ -48,31 +25,36 @@
 
    var intervalID;
 
-   function addLog(text)
+   function addLog(text, log=true)
    {
+      if(log)
+      {
+         console.log(text);
+      }
       output.value += text + '\n';
       output.scrollTop = output.scrollHeight;
    }
 
    socket = io();
+
    socket.on('connect', function(){
-      console.log('Connecting!');
       addLog('Connecting!');
+      if(intervalID != null)
+      {
+         clearInterval(intervalID);
+      }
       socket.emit('connecting', {data: 'Connected!'});
    });
 
    socket.on('info', function(msg){
-      console.log('Received info: ' + msg.message);
       addLog(msg.message);
    });
 
    socket.on('time', function(msg){
-      console.log('Received time: ' + msg.time);
       addLog('Running for ' + msg.time + ' seconds!');
    });
 
    socket.on('error', function(msg){
-      console.log('Received error: ' + msg.message);
       addLog(msg.message);
       if(intervalID != null)
       {
@@ -95,7 +77,6 @@
          clearInterval(intervalID);
          intervalID = null;
       }
-      console.log('Finished!');
       addLog('Finished at ' + msg.time + ' seconds with sum ' + msg.sum + '!');
       socket.emit('finished', {'time': msg.time});
    });
@@ -105,19 +86,39 @@
       socket.emit('status');
    }
 
+   function is_md5(md5_hash)
+   {
+      md5_regex = /^[a-fA-F\d]{32}$/gi;
+      return md5_regex.test(md5_hash);
+   }
+
+   socket.on('starting', function(msg){
+      addLog(msg.message);
+      intervalID = setInterval(queryStatus, 3000);
+      console.log(intervalID);
+      submit.disabled = true;
+   });
+
    submit.onclick = function()
    {
-      if(intervalID == null)
+      if(hash.value == '')
       {
-         socket.emit('hash', {'hash': hash.value});
-         intervalID = setInterval(queryStatus, 3000);
-         console.log(intervalID);
-         submit.disabled = true;
+         addLog('No hash entered!');
+      }
+      else if(!is_md5(hash.value))
+      {
+         addLog('Not an MD5 hash!');
       }
       else
       {
-         console.log('Interval already running!');
-         addLog('Interval already running!');
+         if(intervalID == null)
+         {
+            socket.emit('hash', {'hash': hash.value});
+         }
+         else
+         {
+            addLog('Interval already running!');
+         }
       }
    };
 
