@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from random import random
-from time import sleep, time
+from time import time
 from flask import Flask, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -12,7 +11,6 @@ import numpy as np
 import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.tools
-import pycuda.autoinit
 
 async_mode = 'threading'
 
